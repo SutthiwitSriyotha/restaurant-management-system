@@ -3,53 +3,67 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Menu from "@/models/Menu";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
+import { authOptions } from "@/lib/auth"; // ปรับ path ตามจริงของ authOptions
 
-// GET เมนูของร้าน (ไม่มี req parameter เพราะไม่ได้ใช้)
+// GET เมนูของร้าน
 export async function GET() {
-  const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== "store") {
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-  }
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session || session.user.role !== "store") {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
 
-  await connectDB();
-  const menus = await Menu.find({ storeId: session.user.id });
-  return NextResponse.json(menus);
+    await connectDB();
+    const menus = await Menu.find({ storeId: session.user.id });
+    return NextResponse.json(menus);
+  } catch (error: any) {
+    return NextResponse.json({ message: error.message || "Server error" }, { status: 500 });
+  }
 }
 
-// เพิ่มเมนูอาหาร
+// POST เพิ่มเมนูอาหาร
 export async function POST(req: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== "store") {
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session || session.user.role !== "store") {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await req.json();
+    const { name, price, imageUrl, addons } = body;
+
+    await connectDB();
+    const menu = await Menu.create({
+      storeId: session.user.id,
+      name,
+      price,
+      imageUrl,
+      addons,
+    });
+
+    return NextResponse.json(menu);
+  } catch (error: any) {
+    return NextResponse.json({ message: error.message || "Server error" }, { status: 500 });
   }
-
-  const body = await req.json();
-  const { name, price, imageUrl, addons } = body;
-
-  await connectDB();
-  const menu = await Menu.create({
-    storeId: session.user.id,
-    name,
-    price,
-    imageUrl,
-    addons,
-  });
-
-  return NextResponse.json(menu);
 }
 
-// ลบเมนูอาหาร
+// DELETE ลบเมนูอาหาร
 export async function DELETE(req: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== "store") {
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session || session.user.role !== "store") {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
+
+    const url = new URL(req.url);
+    const id = url.searchParams.get("id");
+    if (!id) return NextResponse.json({ message: "Id missing" }, { status: 400 });
+
+    await connectDB();
+    await Menu.findByIdAndDelete(id);
+
+    return NextResponse.json({ message: "Menu deleted" });
+  } catch (error: any) {
+    return NextResponse.json({ message: error.message || "Server error" }, { status: 500 });
   }
-
-  const id = req.url.split("id=")[1];
-  if (!id) return NextResponse.json({ message: "Id missing" }, { status: 400 });
-
-  await connectDB();
-  await Menu.findByIdAndDelete(id);
-  return NextResponse.json({ message: "Menu deleted" });
 }
