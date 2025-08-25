@@ -6,11 +6,17 @@ if (!MONGODB_URI) {
   throw new Error("⚠️ Please define the MONGODB_URI environment variable inside .env.local");
 }
 
-let cached = (global as any).mongoose;
+type MongooseCache = {
+  conn: typeof mongoose | null;
+  promise: Promise<typeof mongoose> | null;
+};
 
-if (!cached) {
-  cached = (global as any).mongoose = { conn: null, promise: null };
+declare global {
+  // เพิ่ม cached ใน global
+  var mongoose: MongooseCache | undefined;
 }
+
+let cached: MongooseCache = global.mongoose || { conn: null, promise: null };
 
 export async function connectDB() {
   if (cached.conn) return cached.conn;
@@ -20,5 +26,6 @@ export async function connectDB() {
   }
 
   cached.conn = await cached.promise;
+  global.mongoose = cached; // เก็บใน global
   return cached.conn;
 }

@@ -3,6 +3,8 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { connectDB } from "@/lib/mongodb";
 import User from "@/models/User";
 import bcrypt from "bcryptjs";
+import { JWT } from "next-auth/jwt";
+import { Session } from "next-auth";
 
 const handler = NextAuth({
   providers: [
@@ -24,18 +26,18 @@ const handler = NextAuth({
       },
     }),
   ],
-  session: {
-    strategy: "jwt",
-  },
+  session: { strategy: "jwt" },
   callbacks: {
     async jwt({ token, user }) {
-      if (user) token.role = (user as any).role;
-      return token;
+    if (user?.role) token.role = user.role;
+    return token;
     },
+
     async session({ session, token }) {
-      (session.user as any).role = token.role;
-      return session;
+    if (session.user && token.role) session.user.role = token.role;
+    return session;
     },
+
   },
 });
 

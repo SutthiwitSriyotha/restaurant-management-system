@@ -5,8 +5,16 @@ import { getSession } from "next-auth/react";
 
 type Addon = { name: string; price: number };
 
+type MenuType = {
+  _id: string;
+  storeId: string;
+  name: string;
+  price: number;
+  addons?: Addon[];
+};
+
 export default function MenuDashboard() {
-  const [menus, setMenus] = useState<any[]>([]);
+  const [menus, setMenus] = useState<MenuType[]>([]);
   const [name, setName] = useState("");
   const [price, setPrice] = useState(0);
   const [addons, setAddons] = useState<Addon[]>([]);
@@ -15,7 +23,7 @@ export default function MenuDashboard() {
   const [storeId, setStoreId] = useState("");
 
   useEffect(() => {
-    getSession().then((session: any) => {
+    getSession().then((session) => {
       if (session?.user?.role === "store") {
         setStoreId(session.user.id);
         fetchMenus(session.user.id);
@@ -25,7 +33,8 @@ export default function MenuDashboard() {
 
   const fetchMenus = async (storeId: string) => {
     const res = await fetch(`/api/menu?storeId=${storeId}`);
-    const data = await res.json();
+    if (!res.ok) return;
+    const data: MenuType[] = await res.json();
     setMenus(data);
   };
 
@@ -117,9 +126,12 @@ export default function MenuDashboard() {
             <div>
               <h2 className="font-bold">{menu.name}</h2>
               <p>Price: {menu.price} บาท</p>
-              {menu.addons?.length > 0 && (
-                <p>Add-ons: {menu.addons.map((a: Addon) => `${a.name}+${a.price}บาท`).join(", ")}</p>
-              )}
+              {(menu.addons ?? []).length > 0 && (
+                <p>
+                    Add-ons: {(menu.addons ?? []).map((a) => `${a.name}+${a.price}บาท`).join(", ")}
+                </p>
+                )}
+
             </div>
             <button
               onClick={() => handleDelete(menu._id)}
