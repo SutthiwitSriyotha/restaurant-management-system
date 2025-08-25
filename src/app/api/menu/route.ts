@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Menu from "@/models/Menu";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth"; // ปรับ path ตามจริงของ authOptions
+import { authOptions } from "@/lib/auth";
 
 // GET เมนูของร้าน
 export async function GET() {
@@ -16,8 +16,9 @@ export async function GET() {
     await connectDB();
     const menus = await Menu.find({ storeId: session.user.id });
     return NextResponse.json(menus);
-  } catch (error: any) {
-    return NextResponse.json({ message: error.message || "Server error" }, { status: 500 });
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : "Server error";
+    return NextResponse.json({ message: msg }, { status: 500 });
   }
 }
 
@@ -29,21 +30,21 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await req.json();
-    const { name, price, imageUrl, addons } = body;
+    const body: { name: string; price: number; imageUrl?: string; addons?: { name: string; price: number }[] } = await req.json();
 
     await connectDB();
     const menu = await Menu.create({
       storeId: session.user.id,
-      name,
-      price,
-      imageUrl,
-      addons,
+      name: body.name,
+      price: body.price,
+      imageUrl: body.imageUrl,
+      addons: body.addons,
     });
 
     return NextResponse.json(menu);
-  } catch (error: any) {
-    return NextResponse.json({ message: error.message || "Server error" }, { status: 500 });
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : "Server error";
+    return NextResponse.json({ message: msg }, { status: 500 });
   }
 }
 
@@ -63,7 +64,8 @@ export async function DELETE(req: Request) {
     await Menu.findByIdAndDelete(id);
 
     return NextResponse.json({ message: "Menu deleted" });
-  } catch (error: any) {
-    return NextResponse.json({ message: error.message || "Server error" }, { status: 500 });
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : "Server error";
+    return NextResponse.json({ message: msg }, { status: 500 });
   }
 }
