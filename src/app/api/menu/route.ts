@@ -1,11 +1,12 @@
+// src/app/api/menu/route.ts
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Menu from "@/models/Menu";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 
-// GET เมนูของร้าน
-export async function GET(req: Request) {
+// GET เมนูของร้าน (ไม่มี req parameter เพราะไม่ได้ใช้)
+export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== "store") {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
@@ -28,7 +29,7 @@ export async function POST(req: Request) {
 
   await connectDB();
   const menu = await Menu.create({
-    storeId: session.user.id, // ใช้ id ร้านจาก session
+    storeId: session.user.id,
     name,
     price,
     imageUrl,
@@ -45,7 +46,7 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
-  const id = req.url.split("id=")[1]; // query ?id=
+  const id = req.url.split("id=")[1];
   if (!id) return NextResponse.json({ message: "Id missing" }, { status: 400 });
 
   await connectDB();
