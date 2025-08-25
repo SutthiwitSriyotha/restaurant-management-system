@@ -27,14 +27,14 @@ export default function LoginPage() {
     if (res?.error) {
       setError(res.error);
     } else {
-      router.push("/dashboard");
+      router.push("/"); // ลูกค้าล็อคอินเสร็จกลับหน้าหลัก
     }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="bg-white p-8 rounded shadow-md w-full max-w-md">
-        <h1 className="text-2xl font-bold mb-6">Login</h1>
+        <h1 className="text-2xl font-bold mb-6">Customer Login</h1>
         {error && <p className="text-red-500 mb-4">{error}</p>}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -66,12 +66,11 @@ export default function LoginPage() {
           </button>
         </form>
         <p className="mt-4 text-sm">
-        Don&apos;t have an account?{" "}
-        <a href="/register" className="text-blue-600 hover:underline">
+          Don't have an account?{" "}
+          <a href="/register" className="text-green-600 hover:underline">
             Register
-        </a>
+          </a>
         </p>
-
       </div>
     </div>
   );

@@ -1,36 +1,44 @@
-import { NextResponse } from "next/server"; 
+import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import User from "@/models/User";
 import bcrypt from "bcryptjs";
 
-type RegisterBody = {
-  email: string;
-  password: string;
-  role?: string;
-};
-
 export async function POST(req: Request) {
   try {
-    const { email, password, role }: RegisterBody = await req.json();
+    const body = await req.json();
+    const { email, password, role, username, storeName } = body;
+
+    if (!email || !password || !role) {
+      return NextResponse.json({ message: "Missing fields" }, { status: 400 });
+    }
+
     await connectDB();
 
-    const exists = await User.findOne({ email });
-    if (exists) {
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
       return NextResponse.json({ message: "User already exists" }, { status: 400 });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = await User.create({ email, password: hashedPassword, role });
+    // Validation ตาม role
+    if (role === "customer" && !username) {
+      return NextResponse.json({ message: "Username is required" }, { status: 400 });
+    }
+    if (role === "store" && !storeName) {
+      return NextResponse.json({ message: "Store name is required" }, { status: 400 });
+    }
 
-    return NextResponse.json(
-      { 
-        message: "User created", 
-        user: { id: newUser._id.toString(), email: newUser.email, role: newUser.role } 
-      }, 
-      { status: 201 }
-    );
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    return NextResponse.json({ message }, { status: 500 });
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const newUser = await User.create({
+      email,
+      password: hashedPassword,
+      role,
+      username: role === "customer" ? username : undefined,
+      storeName: role === "store" ? storeName : undefined,
+    });
+
+    return NextResponse.json({ message: "User created", user: newUser }, { status: 201 });
+  } catch (err: any) {
+    return NextResponse.json({ message: err.message }, { status: 500 });
   }
 }
